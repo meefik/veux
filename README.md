@@ -351,7 +351,7 @@ createView({
 
 ## Localization
 
-Localization is used to display the application interface in different languages.
+Localization is used to display the application interface in different languages.You can use localized number and date formatting with [Intl.NumberFormat](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat) and [Intl.DateTimeFormat](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat).
 
 Translation example:
 
@@ -360,76 +360,53 @@ const l10n = createL10n({
   en: {
     say: {
       hello: "Hello %{name}!"
-    }
+    },
+    number: 'number: %{val}',
+    date: 'date: %{val}'
   },
   ru: {
     say: {
       hello: "Привет %{name}!"
-    }
+    },
+    number: 'число: %{val}',
+    date: 'дата: %{val}'
   }
 }, {
   fallback: 'en',
   lang: navigator.language
 });
+console.log(l10n.locales); // ['en', 'ru']
+const { translate: t } = l10n;
+
 l10n.lang = 'en';
-const msgEn = l10n.t('say.hello', { name: 'World' });
+const msgEn = t('say.hello', { name: 'World' });
 console.log(msgEn); // Hello World!
+
+const numberMsg = t('number', {
+  val: [12345, {
+    style: 'currency',
+    currency: 'USD'
+  }]
+});
+console.log(numberMsg); // number: $12,345.00
+
+const dateMsg = t('date', {
+  val: [new Date('2025-01-15'), {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }]
+});
+console.log(dateMsg); // date: Wednesday, January 15, 2025
+
 l10n.lang = 'ru';
-const msgRu = l10n.t('say.hello', { name: 'Мир' });
+const msgRu = t('say.hello', { name: 'Мир' });
 console.log(msgRu); // Привет Мир!
-const msg = l10n.t('say.hello', { name: 'World' }, 'en');
+
+const msg = t('say.hello', { name: 'World' }, 'en');
 console.log(msg); // Hello World!
 ```
-
-Convert date and time to localized string:
-
-```js
-const l10n = createL10n({
-  en: {
-    month: {
-      full: ['January','February','March','April','May','June','July','August','September','October','November','December'],
-      short: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-    },
-    day:{
-      full: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
-      short: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-    },
-    time: {
-      am: ['am','AM'],
-      pm: ['pm','PM']
-    }
-  }
-}, {
-  fallback: 'en',
-  lang: navigator.language
-});
-// date format
-const date = new Date('2024-03-15T14:30:00.000Z');
-const text = l10n.d(date, '{dddd}, {DD} {MMM} {YYYY} {h}:{mm} {A} {Z}');
-console.log(text); // Friday, 15 Mar 2024 2:30 PM +0:00
-```
-
-Description of date format similar to [Moment.js](https://momentjs.com/docs/#/parsing/string-format/)
-
-| Input    | Example        | Description                         |
-|----------|----------------|-------------------------------------|
-| YYYY     | 2024           | 4 digit year                        |
-| YY       | 24             | 2 digit year                        |
-| Q        | 1..4           | Quarter of year                     |
-| M MM     | 1..12          | Month number                        |
-| MMM MMMM | Jan..December  | Month name                          |
-| D DD     | 1..31          | Day of month                        |
-| DDD DDDD | 1..365         | Day of year                         |
-| ddd dddd | Mon...Sunday   | Day name                            |
-| X        | 1712751431.381 | Unix timestamp                      |
-| x        | 1712751431381  | Unix ms timestamp                   |
-| H HH     | 0..23          | Hours (24 hour time)                |
-| h hh     | 1..12          | Hours (12 hour time used with a A.) |
-| k kk     | 1..24          | Hours (24 hour time from 1 to 24)   |
-| a A      | am PM          | Post or ante meridiem               |
-| m mm     | 0..59          | Minutes                             |
-| s ss     | 0..59          | Seconds                             |
-| Z ZZ     | +12:00         | Offset from UTC                     |
 
 ## Routing
 

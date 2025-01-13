@@ -22,3 +22,7 @@ export function isObject(obj) {
   return typeof obj === 'object' && obj !== null
     && (obj.constructor === Object || obj.constructor === Array);
 }
+
+export function isDate(obj) {
+  return obj instanceof Date;
+}
