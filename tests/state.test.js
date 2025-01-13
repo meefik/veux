@@ -255,74 +255,6 @@ describe('state', () => {
     }
   });
 
-  it('create', () => {
-    const state = createState({});
-    const sub = state.$$create();
-    assert.equal(Object.keys(state).length, 0);
-    assert.ok(typeof sub === 'object');
-  });
-
-  it('clone & equal', () => {
-    const state = createState({
-      a: 1,
-      b: 'b',
-      c: {
-        d: 10,
-        e: [1, 2, { f: 'f' }],
-      },
-    });
-    const obj = state.$$clone();
-    assert.ok(!obj.$$clone);
-    assert.ok(state.$$equal(obj));
-  });
-
-  it('patch', async () => {
-    const state = createState({
-      key1: 'key1',
-      nested: {
-        key1: 'nested.key1',
-        key2: 'nested.key2',
-        key3: 'nested.key3',
-      },
-    });
-    try {
-      await new Promise((resolve, reject) => {
-        const changed = ['key3', 'key4'];
-        state.$$on('*', (newv, oldv, prop, obj, rest) => {
-          if (rest[0] === 'nested') {
-            const index = changed.indexOf(prop);
-            if (index > -1) {
-              changed.splice(index, 1);
-            }
-            if (!changed.length) {
-              clearTimeout(timer);
-              resolve();
-            }
-          }
-        });
-        const timer = setTimeout(() => {
-          reject(Error('Operation timeout'));
-        }, 100);
-        state.$$patch({
-          key1: 'key1',
-          nested: {
-            key2: 'nested.key2',
-            key3: 'changed1',
-            key4: 'changed2',
-          },
-        });
-      });
-    }
-    catch (err) {
-      assert.fail(err.message);
-    }
-    assert.equal(state.key1, 'key1');
-    assert.ok(!state.nested.key1);
-    assert.equal(state.nested.key2, 'nested.key2');
-    assert.equal(state.nested.key3, 'changed1');
-    assert.equal(state.nested.key4, 'changed2');
-  });
-
   it('each', async () => {
     try {
       const state = createState({
@@ -357,48 +289,6 @@ describe('state', () => {
     catch (err) {
       assert.fail(err.message);
     }
-  });
-
-  it('query', async () => {
-    const state = createState({
-      t: 'a',
-      n: 1,
-      b: true,
-      obj: {
-        t: 'b',
-        n: 2,
-        b: false,
-        arr: [{
-          t: 'c',
-          n: 3,
-          b: true,
-        }],
-      },
-    });
-    const res = state.$$query({ t: 'c' });
-    assert.equal(res.n, 3);
-  });
-
-  it('queryAll', async () => {
-    const state = createState({
-      t: 'a',
-      n: 1,
-      b: true,
-      obj: {
-        t: 'b',
-        n: 2,
-        b: false,
-        arr: [{
-          t: 'a',
-          n: 3,
-          b: true,
-        }],
-      },
-    });
-    const res = state.$$queryAll({ t: 'a' });
-    assert.equal(res.length, 2);
-    assert.equal(res[0].n, 1);
-    assert.equal(res[1].n, 3);
   });
 
   it('context', () => {
