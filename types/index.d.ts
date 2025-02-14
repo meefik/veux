@@ -4,78 +4,41 @@
  * @param data Initial state data.
  * @param options State options.
  */
-export function createState(data?: object, options?: {
-  context?: object
-}): object;
+export function signal(data: object, context?: object): {
+  [key: string]: any
+};
 /**
- * Create a view.
+ * Create an element.
  *
- * @param config View configuration.
- * @param options View options.
+ * @param config Element configuration.
+ * @param options Element options.
  */
-export function createView(config: object, options?: {
-  target?: HTMLElement,
-  context?: object
-}): object;
+export function render(config: object): Element;
+/**
+ * Mount an element to the DOM with moutation observer.
+ * 
+ * @param el Source element.
+ * @param target Target element.
+ */
+export function mount(el: Element, target: Element): void;
 /**
  * Create a localization.
  * 
  * @param locales Localized translations.
  * @param options Localization options.
  */
-export function createL10n(locales: object, options?: {
-  lang?: string,
+export function l10n(locales: object, options?: {
+  language?: string,
   fallback?: string,
-  prefix?: string,
-  context?: object
-}): {
-  lang: string,
-  $lang: string,
-  locales: string[],
-  t: (path: string, data?: object | string, lang?: string) => string,
-  d: (date: Date | number, format: string, utc?: boolean) => string
-};
-/**
- * Create a router.
- *
- * @param routes Regular expressions for parsing parameters.
- * @param options Routing parameters.
- */
-export function createRouter(routes?: {
-  [param: string]: RegExp
-}, options?: {
-  home?: string,
-  context?: object
-}): {
-  path: string,
-  $path: string,
-  params: { [key: string]: string },
-  query: { [key: string]: string },
-  navigate: (path: string, query?: object) => void
-};
+}): (path: string, data?: object | string, lang?: string) => string;
 /**
  * Create an RPC client.
  * 
  * @param options RPC connection options.
  */
-export function createRPC(options?: {
-  url?: object,
+export function rpc(url: string, options?: {
   method?: object,
   headers?: object,
-  mode?: object,
-  credentials?: object
 }): {
-  [method: string]: (params: any) => any
+  [fn: string]: (params: any) => any
 };
-/**
- * Create a synchronization function.
- * 
- * @param state The state to sync.
- * @param handler Synchronization function call handler.
- * @param options Synchronization options.
- */
-export function createSync(state: object, handler: (
-  newv: any, oldv: any, ...args: any
-) => any, options?: {
-  slippage?: number
-}): Function;

@@ -3,22 +3,14 @@ import { isObject } from './utils';
 /**
  * Create an RPC client.
  *
- * @param {object} [options]
- * @param {object} [options.url="/api/rpc"]
- * @param {object} [options.method="POST"]
- * @param {object} [options.headers]
- * @param {object} [options.mode]
- * @param {object} [options.credentials]
+ * @param {string} url URL of the RPC server.
+ * @param {object} [options] Fetch options.
+ * @param {string} [options.method="POST"] HTTP method.
+ * @param {object} [options.headers] HTTP headers.
  * @returns {Proxy}
  */
-export function createRPC(options) {
-  const {
-    url = '/api/rpc',
-    method = 'POST',
-    headers = {},
-    mode,
-    credentials,
-  } = options;
+export function rpc(url, options = {}) {
+  const { method = 'POST', headers = {} } = options;
   const target = {};
   Object.seal(target);
   const handler = {
@@ -40,9 +32,8 @@ export function createRPC(options) {
         params = `${params}`;
       }
       const res = await fetch(`${url}/${prop}`, {
+        ...options,
         method,
-        mode,
-        credentials,
         headers: Object.defineProperties(reqHeaders, {
           ...Object.getOwnPropertyDescriptors(headers),
         }),

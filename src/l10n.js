@@ -3,25 +3,22 @@ import { isArray, isNumber, isObject, isString, isDate } from './utils';
 /**
  * Create a localization.
  *
- * @param {object} locales
- * @param {object} [options]
- * @param {string} [options.lang=navigator.language]
- * @param {string} [options.fallback="en"]
- * @returns {object}
+ * @param {object} locales Locales object.
+ * @param {object} [options] Options.
+ * @param {string} [options.language=navigator.language] Language code.
+ * @param {string} [options.fallback="en"] Fallback language code.
+ * @returns {function}
  */
-export function createL10n(locales, options) {
+export function l10n(locales, options) {
   const {
-    lang = navigator.language,
+    language = navigator.language,
     fallback = 'en',
   } = options || {};
 
-  const translate = (path, data, lang) => {
+  return (path, data, lang = language) => {
     if (isString(data)) {
       lang = data;
       data = null;
-    }
-    if (!lang) {
-      lang = l10n.lang;
     }
     if (!lang || !locales[lang]) {
       lang = fallback;
@@ -46,13 +43,4 @@ export function createL10n(locales, options) {
     }
     return text;
   };
-
-  const l10n = {
-    lang: locales[lang] ? lang : fallback,
-    locales: Object.keys(locales),
-    translate,
-  };
-  Object.seal(l10n);
-
-  return l10n;
 }
