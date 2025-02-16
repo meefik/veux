@@ -72,18 +72,15 @@ function setWatcher(state, prop, child, cleaner) {
  *
  * @param {function} getter Getter function.
  * @param {function} [setter] Setter function.
- * @param {function} [cleanup] Cleanup function.
  * @returns {function} Dispose function.
  */
-export function effect(getter, setter, cleanup) {
+export function effect(getter, setter) {
   const context = createContext(this);
   getter = getter.bind(context);
   setter = setter ? setter.bind(context) : () => {};
-  cleanup = cleanup ? cleanup.bind(context) : () => {};
   const cleanups = [];
   const dispose = () => {
     for (const fn of cleanups) fn();
-    cleanup();
   };
   const value = readContext(context, getter, (obj, prop, tpl) => {
     tpl = isFunction(tpl) ? tpl.bind(context) : null;

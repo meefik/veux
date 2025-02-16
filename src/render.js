@@ -10,9 +10,9 @@ import { effect } from './signal.js';
  * @returns {Element}
  */
 function createElement(tag, ns) {
-  const { Element } = window;
+  const { document, customElements, Element } = window;
   const classList = [];
-  let el, tagName, id;
+  let el, id, tagName = 'div';
 
   if (isString(tag)) {
     if (/[^a-zA-Z0-9-_.#]/u.test(tag)) {
@@ -40,24 +40,33 @@ function createElement(tag, ns) {
     el = tag;
     tagName = el.tagName;
   }
+
   // create element if not exists
   if (!el) {
-    if (ns === 'http://www.w3.org/1999/xhtml') {
-      ns = null;
+    // create custom element if exists
+    const CustomElement = customElements?.get(tagName);
+    if (CustomElement) {
+      el = new CustomElement();
     }
-    if (!ns) {
-      switch (`${tagName}`.toLowerCase()) {
-        case 'svg':
-          ns = 'http://www.w3.org/2000/svg';
-          break;
-        case 'math':
-          ns = 'http://www.w3.org/1998/Math/MathML';
-          break;
+    else {
+      // create element with namespace if defined
+      if (ns === 'http://www.w3.org/1999/xhtml') {
+        ns = null;
       }
+      if (!ns) {
+        switch (`${tagName}`.toLowerCase()) {
+          case 'svg':
+            ns = 'http://www.w3.org/2000/svg';
+            break;
+          case 'math':
+            ns = 'http://www.w3.org/1998/Math/MathML';
+            break;
+        }
+      }
+      el = ns
+        ? document.createElementNS(ns, tagName)
+        : document.createElement(tagName);
     }
-    el = ns
-      ? document.createElementNS(ns, tagName)
-      : document.createElement(tagName);
   }
   // set id and classList if defined
   if (id) el.id = id;
@@ -67,40 +76,38 @@ function createElement(tag, ns) {
 }
 
 /**
- * Create an element with HyperScript-like syntax.
- *
- * Usage examples:
- *   h('div', { id: 'my-id', classList: ['my-class'] }, 'Hello');
- *   h('div#my-id.my-class', 'Hello');
- *   h('div', [h('span', 'Hello'), h('span', 'World')]);
- *
- * @param {string|Element} tag Tag name or Element.
- * @param {object|*} [config] Element configuration or children if omitted.
- * @param {*} [children] Element content or children elements.
- * @returns {Element}
- */
-export function h(tag, config, children) {
-  if (!isObject(config) || isArray(config)) {
-    children = config;
-    config = {};
-  }
-  return render.call(this, { tag, children, ...config });
-}
-
-/**
  * Create an element with specified configuration.
  *
  * @param {object} [config] Element configuration.
+ * @param {string} [ns] Namespace URI.
  * @returns {Element}
  */
-export function render(config) {
-  if (!isObject(config)) return config;
-  const { Element } = window;
+function createNode(config, ns) {
+  const { document, Node } = window;
   const context = createContext(this);
+  if (isFunction(config)) {
+    config = config.call(context);
+  }
+  if (isString(config)) {
+    return document.createTextNode(config);
+  }
+  if (!isObject(config)) {
+    return config;
+  }
+  if (isArray(config)) {
+    const fragment = document.createDocumentFragment();
+    for (const item of config) {
+      const child = createNode.call(context, item, ns);
+      if (child instanceof Node) {
+        fragment.appendChild(child);
+      }
+    }
+    return fragment;
+  }
   const {
-    tagName = 'div',
     tag,
-    namespaceURI,
+    tagName = 'div',
+    namespaceURI = ns,
     classList,
     attributes,
     style,
@@ -123,6 +130,7 @@ export function render(config) {
   };
   // create element
   const el = createElement(tag ?? tagName, namespaceURI);
+  ns = el.namespaceURI;
   // parse event handlers
   if (!isUndefined(on)) {
     for (const ev in on) {
@@ -211,52 +219,33 @@ export function render(config) {
   }
   // parse children
   if (!isUndefined(children)) {
+    const target = el.shadowRoot ?? el;
     resolve(children, (value, index, op) => {
       if (op === 'del') {
-        const oldChild = el.children[index];
+        const oldChild = target.children[index];
         if (oldChild) {
-          el.removeChild(oldChild);
+          target.removeChild(oldChild);
         }
       }
       else if (op === 'add') {
-        const opts = isObject(value)
-          ? { namespaceURI: el.namespaceURI, ...value }
-          : value;
-        const newChild = render.call(context, opts);
+        const newChild = createNode.call(context, value, ns);
         if (newChild) {
-          el.appendChild(newChild);
+          target.appendChild(newChild);
         }
       }
       else if (op === 'upd') {
-        const oldChild = el.children[index];
+        const oldChild = target.children[index];
         if (oldChild) {
-          const opts = isObject(value)
-            ? { namespaceURI: el.namespaceURI, ...value }
-            : value;
-          const newChild = render.call(context, opts);
+          const newChild = createNode.call(context, value, ns);
           if (newChild) {
-            el.replaceChild(newChild, oldChild);
+            target.replaceChild(newChild, oldChild);
           }
         }
       }
       else {
-        el.innerHTML = '';
-        if (isObject(value)) {
-          const nodes = [].concat(value);
-          for (const node of nodes) {
-            const opts = isObject(node)
-              ? { namespaceURI: el.namespaceURI, ...node }
-              : node;
-            const child = render.call(context, opts);
-            if (child instanceof Element) {
-              el.appendChild(child);
-            }
-          }
-        }
-        else {
-          const child = document.createTextNode(value);
-          el.appendChild(child);
-        }
+        target.innerHTML = '';
+        const fragment = createNode.call(context, value, ns);
+        target.appendChild(fragment);
       }
     });
   }
@@ -265,4 +254,25 @@ export function render(config) {
     ref.call(context, el);
   }
   return el;
+}
+
+/**
+ * Create an element, text node, or fragment using HyperScript-like syntax.
+ *
+ * @param {string|Element|object|any[]} [tag] Tag name or HTML markup or Element or configuration object.
+ * @param {object|any[]} [config] Configuration object or children if omitted.
+ * @param {any[]} [children] Element content or children elements.
+ * @returns {Node}
+ */
+export function render(tag, config, children) {
+  if (isObject(tag)) {
+    children = config;
+    config = tag;
+    tag = null;
+  }
+  if (!isObject(config) || isArray(config)) {
+    children = config;
+    config = {};
+  }
+  return createNode.call(this, { tag, children, ...config });
 }

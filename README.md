@@ -77,7 +77,7 @@ mount(el, document.body);
 You can use HyperScript-like syntax to render HTML elements with the `h()` function.
 
 ```js
-import { h, signal, mount } from 'neux';
+import { render: h, signal, mount } from 'neux';
 
 const state = signal({ count: 1 });
 
@@ -387,6 +387,10 @@ You can use `signal()` and `render()` functions with condition for children fiel
 An example with comments:
 
 ```js
+const state = signal({
+  path: 'Home',
+});
+
 const Home = () => {
   return {
     textContent: 'Home',
@@ -407,43 +411,33 @@ const NotFound = () => {
 
 const views = { Home, About };
 
-const state = signal({
-  path: 'Home',
-});
-
 const el = render({
   children: [{
+    tag: 'nav',
     children: [{
-      tag: 'button',
+      tag: 'a',
+      href: '#Home',
       textContent: 'Home',
-      on: {
-        click() {
-          state.path = 'Home';
-        },
-      },
     }, {
-      tag: 'button',
+      tag: 'a',
+      href: '#About',
       textContent: 'About',
-      on: {
-        click() {
-          state.path = 'About';
-        },
-      },
     }, {
-      tag: 'button',
+      tag: 'a',
+      href: '#Blog',
       textContent: 'Blog',
-      on: {
-        click() {
-          state.path = 'Blog';
-        },
-      },
     }],
   }, {
+    tag: 'main',
     children: () => {
       const View = views[state.$path];
       return View ? View() : NotFound();
     },
   }],
+});
+
+window.addEventListener('hashchange', () => {
+  state.path = location.hash.slice(1);
 });
 
 mount(el, document.body);
